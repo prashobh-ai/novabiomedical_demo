@@ -263,10 +263,10 @@ export function cohereByDocument(rawRanked, chunks, opts = {}) {
       const tid = bm25Index.termId[qt];
       if (tid !== undefined) {
         // Term is in vocab — judge it on its own literal df. Do NOT consider
-        // its morphological variants. Otherwise common terms like "qualizeal"
-        // (df=305, not rare) would incorrectly pass the rare check via their
-        // junk plurals ("qualizeals" df=2) and confidently answer queries
-        // about topics the corpus doesn't actually cover.
+        // its morphological variants. Otherwise a term that is common across
+        // the corpus (high df, not rare) would incorrectly pass the rare check
+        // via a junk plural (low df) and confidently answer queries about
+        // topics the corpus doesn't actually cover.
         const df = (bm25Index.postings[tid] || []).length;
         if (df > 0 && df < threshold) { hasRareTerm = true; break outer; }
       } else {

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="site/assets/qualizeal-wordmark.jpeg" alt="Qualizeal" width="450"/>
+  <img src="site/assets/nova-biomedical-wordmark.png" alt="Nova Biomedical" width="450"/>
 </p>
 
 <h1 align="center">Knowledge Fabric</h1>
@@ -183,6 +183,6 @@ site/ - GitHub Pages application
 
 ---
 
-## Built as an Innovation Initiative by Qualizeal
+## Built as an Innovation Initiative by Nova Biomedical
 
 Transforming enterprise knowledge into explainable intelligence.
