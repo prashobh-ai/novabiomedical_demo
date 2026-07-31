@@ -13,7 +13,7 @@
 // *canonicalizes the query*, it never ships a canned answer.
 // =============================================================================
 
-import { tokenize, synonymTokens } from './search.js?v=4';
+import { tokenize, synonymTokens } from './search.js?v=5';
 
 // Vetted questions — each was confirmed to return a confident, cited answer
 // against the indexed manuals (StatStrip Glucose, Lactate, StatSensor
