@@ -62,20 +62,11 @@ async function boot() {
   seedDemoAnswer();
 }
 
-// Pick a strong demo question — generic logic: prefer "What is <product>?"
-// using the first product doc filename match. Falls back to any suggested
-// question. Runs silently — no auto-scroll, no chat append.
+// Pick a strong demo question from the corpus-derived suggestions so a
+// director scrolling past the hero immediately sees the product working, not
+// an empty stage. First user click runs through ask() and overwrites this.
 function seedDemoAnswer() {
-  const docNames = [...new Set(state.chunks.map(c => c.document_name))].sort();
-  let demoQ = null;
-  for (const name of docNames) {
-    const m = name.match(/^[\d._-]*Product[_-](.+?)\.[A-Za-z]+$/i);
-    if (m) { demoQ = `What is ${m[1].replace(/[_-]+/g, ' ').trim()}?`; break; }
-  }
-  if (!demoQ) {
-    const suggestions = generateSuggestedQuestions();
-    demoQ = suggestions[0];
-  }
+  const demoQ = generateSuggestedQuestions()[0];
   if (!demoQ) return;
   // Run on next tick to let Galaxy finish first render
   setTimeout(() => ask(demoQ, { silent: true }), 350);
@@ -136,43 +127,36 @@ function estimateDomains() {
 }
 
 // ============================================================================
-// Suggested questions — derived generically from doc filename patterns
-// Works for any corpus following `NN_Category_Topic.docx` naming. Falls back
-// to safe defaults if no patterns match.
+// Suggested questions — derived generically from the document names in the
+// indexed corpus. Each unique source document becomes a "What is <name>?"
+// prompt after its document-type suffixes (IFU, instruction/reference manual,
+// etc.) are stripped, so the chips always track whatever corpus is loaded.
 // ============================================================================
+function deriveDocumentTopics() {
+  const seen = new Set();
+  const topics = [];
+  for (const name of [...new Set(state.chunks.map(c => c.document_name))].sort()) {
+    const topic = name
+      .replace(/\.[^.]+$/, '')                                     // drop extension
+      .replace(/[_-]+/g, ' ')                                      // separators → spaces
+      .replace(/\b(IFU|EN|Instruction|Instructions|Reference|Manual|for|Use)\b/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const key = topic.toLowerCase();
+    if (topic && !seen.has(key)) { seen.add(key); topics.push(topic); }
+  }
+  return topics;
+}
+
 function generateSuggestedQuestions() {
-  const docNames = [...new Set(state.chunks.map(c => c.document_name))].sort();
-  const products = [], services = [], company = [];
-  for (const name of docNames) {
-    const m = name.match(/^[\d._-]*([A-Za-z]+)[_-](.+?)\.[A-Za-z]+$/);
-    if (!m) continue;
-    const kind = m[1].toLowerCase();
-    const topic = m[2].replace(/[_-]+/g, ' ').trim();
-    if (/product/.test(kind)) products.push(topic);
-    else if (/service/.test(kind)) services.push(topic);
-    else if (/company|org/.test(kind)) company.push(topic);
-  }
-
-  const questions = [];
-  if (products[0]) questions.push(`What is ${products[0]}?`);
-  if (company.find(t => /leader|founder|team/i.test(t))) questions.push('Who founded the company?');
-  if (services[0]) {
-    const lowered = services[0].toLowerCase();
-    questions.push(`Tell me about ${lowered}`);
-  }
-  if (company.find(t => /mission|vision|purpose/i.test(t))) questions.push('What is the mission?');
-
-  // Backfill with more products/services if we still don't have 4
-  let pi = 1, si = 1;
-  while (questions.length < 4) {
-    if (products[pi] && !questions.some(q => q.includes(products[pi]))) {
-      questions.push(`What is ${products[pi]}?`);
-      pi++;
-    } else if (services[si]) {
-      questions.push(`How does ${services[si].toLowerCase()} work?`);
-      si++;
-    } else break;
-  }
+  const questions = deriveDocumentTopics().map(t => `What is ${t}?`);
+  // Pad to four with corpus-relevant prompts when there are only a few docs.
+  const extras = [
+    'What is the measuring range?',
+    'How is quality control performed?',
+    'What are the test procedure steps?',
+  ];
+  for (const e of extras) { if (questions.length >= 4) break; questions.push(e); }
   return questions.slice(0, 4);
 }
 
