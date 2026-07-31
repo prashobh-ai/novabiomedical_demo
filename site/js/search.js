@@ -29,7 +29,7 @@ export function isBoilerplateSection(section_path) {
 }
 
 // Tokens extracted from a document filename — used as a corroborating signal
-// during cohesion clustering. `03_Product_ValidAIte.docx` → ['product', 'validaite'].
+// during cohesion clustering. `StatSensor_Creatinine_IFU.pdf` → ['statsensor', 'creatinine', 'ifu'].
 // Numbers, separators, extension stripped.
 export function docNameTokens(name) {
   if (!name) return [];
@@ -126,9 +126,9 @@ export class BM25 {
 //       document's filename tokens. For a templated corpus (one doc per
 //       product, service, etc.), the filename is the strongest topical signal
 //       available and pure BM25 body-match can lose to keyword-dense
-//       neighbors — e.g. "What is ValidAIte?" pure-BM25-wins by service brief
-//       that mentions ValidAIte 7 times, even though the actual product doc
-//       has 9 mentions in a shorter chunk count.
+//       neighbors — e.g. "What is <product>?" can pure-BM25-lose to a
+//       keyword-dense neighbor that repeats the product name, even though the
+//       actual product document is the correct source.
 //
 // confidence = high if either distinctness is strong OR the dominant doc's
 // filename matches the query. Filename matching gives us a corpus-size-
@@ -169,9 +169,8 @@ export function cohereByDocument(rawRanked, chunks, opts = {}) {
   // Suppress boilerplate chunks BEFORE computing per-document aggregates.
   // A doc with 10 URL/blog-title chunks shouldn't outrank a doc with 2
   // substantive body chunks — but with raw BM25 it does, and that's what
-  // routes "When was X founded?" to the QMentisAI Insights & Blogs section
-  // (which mentions "founders" in blog titles) instead of the actual
-  // Founding Story chunk in Company History.
+  // routes a query to a keyword-dense index/title section (which repeats the
+  // query terms) instead of the actual substantive chunk that answers it.
   // Fall back to unfiltered ranking only if everything is boilerplate —
   // in that case the answer composer will hit its low-confidence path
   // honestly.

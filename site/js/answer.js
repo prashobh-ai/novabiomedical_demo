@@ -180,8 +180,8 @@ export function buildAnswer(query, ranked, chunks, cohesion = {}) {
 
   // Fallback path: cohesion correctly identified the doc (filename match) but
   // the body uses synonyms or rephrasing for the query terms, so no sentence
-  // strictly matches. Example: doc title says "QMentisAI" but body refers to
-  // it as "AI-Powered QE". In that case, take the first sentence of each
+  // strictly matches. Example: the doc title names the product but the body
+  // refers to it by a synonym or abbreviation. In that case, take the first sentence of each
   // top non-boilerplate chunk — we already know the chunk is on-topic.
   if (candidates.length === 0 && cohesion.docNameMatch) {
     for (const r of ranked.slice(0, 3)) {
