@@ -1,9 +1,9 @@
 /* ============================================================================
-   Knowledge Fabric · Command Center — QualiZeal dual-theme mission control
+   Knowledge Fabric · Command Center — Nova Biomedical dual-theme mission control
    ============================================================================ */
 
 :root {
-  /* ===== QualiZeal brand (theme-invariant) ===== */
+  /* ===== Nova Biomedical brand (theme-invariant) ===== */
   --qz-blue: #4D7CFF;
   --qz-blue-deep: #2E5DDB;
   --qz-blue-soft: rgba(77, 124, 255, 0.16);
@@ -13,7 +13,7 @@
   --qz-violet: #7B5BFF;
   --qz-cyan: #4DD0E8;
 
-  /* ===== Navbar (consistent across themes — mirrors qualizeal.com) ===== */
+  /* ===== Navbar (consistent across themes — mirrors novabiomedical.com) ===== */
   --nav-bg: #F8F9FB;
   --nav-text: #1A1F36;
   --nav-text-dim: #5C6788;
@@ -253,7 +253,7 @@ body.narrative {
 }
 
 /* ============================================================================
-   QUALIZEAL NAVBAR — slim white strip with wordmark, demo label, brand CTAs
+   NOVA BIOMEDICAL NAVBAR — slim white strip with wordmark, demo label, brand CTAs
    ============================================================================ */
 .qz-navbar {
   display: flex;
@@ -278,6 +278,23 @@ body.narrative .story-section:first-of-type { margin-top: 0; }
   height: 32px;
   width: auto;
   display: block;
+}
+.qz-wordmark-text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  color: var(--nav-text);
+}
+.qz-wordmark-text > span {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--nav-text-dim);
 }
 .qz-context {
   display: flex;

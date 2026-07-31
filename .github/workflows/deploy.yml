@@ -40,6 +40,10 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        with:
+          # Enable GitHub Pages automatically if it isn't already turned on,
+          # so the first deploy doesn't fail with "Get Pages site failed".
+          enablement: true
 
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
