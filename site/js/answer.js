@@ -19,7 +19,7 @@
 //      headings, not in the body text.
 // =============================================================================
 
-import { tokenize, expandAgainstVocab, isBoilerplateSection } from './search.js?v=2';
+import { tokenize, expandAgainstVocab, synonymTokens, isBoilerplateSection } from './search.js?v=3';
 
 const MAX_TOTAL_SENTENCES = 5;
 const MIN_SENTENCE_LEN = 25;
@@ -131,6 +131,9 @@ export function buildAnswer(query, ranked, chunks, cohesion = {}) {
     if (Object.keys(vocab).length > 0) {
       const variants = expandAgainstVocab(t, vocab);
       for (const v of variants) expandedQueryTerms.push(v);
+      // Domain synonyms present in the corpus, so an extracted sentence that
+      // uses the manual's terminology still scores against a lay-worded query.
+      for (const s of synonymTokens(t, vocab)) expandedQueryTerms.push(s);
     } else {
       expandedQueryTerms.push(t);
     }
