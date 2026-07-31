@@ -128,9 +128,26 @@ const DOMAIN_SYNONYMS = {
   // quality control
   qc: ['control', 'quality'], control: ['quality'],
   // clinical / analytes
-  lactic: ['lactate'], renal: ['creatinine'], kidney: ['creatinine'], sugar: ['glucose'], serum: ['plasma'],
+  lactic: ['lactate'], renal: ['creatinine'], kidney: ['creatinine'], serum: ['plasma'],
   vein: ['venous'], artery: ['arterial'], fingerstick: ['capillary', 'drop'], finger: ['capillary', 'drop'],
   septic: ['sepsis'], shock: ['sepsis'], lactatemia: ['lactate'],
+  // glucose domain
+  sugar: ['glucose'], glycemia: ['glucose'], hyperglycemia: ['glucose'], hypoglycemia: ['glucose'],
+  glycemic: ['glucose'], diabetic: ['diabetes', 'glucose'], diabetes: ['glucose', 'monitoring'],
+  monitoring: ['glucose', 'meter'], ketone: ['glucose'], gluc: ['glucose'],
+  // sample sources / patients
+  newborn: ['neonate', 'capillary'], newborns: ['neonate', 'capillary'], infant: ['neonate', 'capillary'],
+  infants: ['neonate', 'capillary'], baby: ['neonate'], babies: ['neonate'], neonatal: ['neonate'],
+  pediatric: ['neonate'], paediatric: ['neonate'],
+  // specific interferents (glucose/creatinine/lactate manuals list these)
+  acetaminophen: ['interfering', 'substances'], tylenol: ['acetaminophen', 'interfering'],
+  ascorbic: ['interfering', 'substances'], vitamin: ['ascorbic', 'interfering'],
+  uric: ['interfering', 'substances'], maltose: ['interfering', 'substances'],
+  galactose: ['interfering', 'substances'], xylose: ['interfering', 'substances'],
+  icodextrin: ['interfering', 'substances'], oxygen: ['interfering', 'substances'],
+  // units
+  mgdl: ['range', 'measuring', 'mg'], mg: ['range', 'measuring'], dl: ['range', 'measuring'],
+  units: ['mg', 'mmol', 'reportable'], unit: ['mg', 'mmol'],
   // disposal & lifecycle
   dispose: ['disposal'], discard: ['disposal'], expiry: ['expiration'], expire: ['expiration'],
   expires: ['expiration'], expired: ['expiration'],

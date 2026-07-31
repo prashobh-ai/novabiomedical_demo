@@ -2,12 +2,13 @@
 // Knowledge Fabric · Command Center — main entry
 // ============================================================================
 
-import { BM25, cohereByDocument, tokenize } from './search.js?v=3';
-import { buildAnswer } from './answer.js?v=3';
-import { KnowledgeGraph } from './graph.js?v=3';
-import { initInsights } from './insights.js?v=3';
-import { initLineage, renderLineage } from './lineage.js?v=3';
-import { initExplain, openExplain } from './explain.js?v=3';
+import { BM25, cohereByDocument, tokenize } from './search.js?v=4';
+import { buildAnswer } from './answer.js?v=4';
+import { KnowledgeGraph } from './graph.js?v=4';
+import { initInsights } from './insights.js?v=4';
+import { initLineage, renderLineage } from './lineage.js?v=4';
+import { initExplain, openExplain } from './explain.js?v=4';
+import { matchQuestionBank, QUESTION_BANK } from './questionbank.js?v=4';
 
 const INDEX_URL = 'data/index.json';
 
@@ -70,9 +71,10 @@ async function boot() {
 // sync — nothing here is a canned answer. Empty the array to fall back to the
 // corpus-derived suggestions.
 const PRESET_QUESTIONS = [
-  'What is the intended use of the StatSensor Creatinine analyzer?',
-  'What are the operating temperature and humidity limits?',
+  'What is the intended use of the StatStrip Glucose meter?',
   'What is the clinical significance of measuring lactate?',
+  'How does hematocrit affect creatinine measurement?',
+  'What substances interfere with glucose results?',
 ];
 
 // The questions to surface as chips / seed the demo answer: curated presets
@@ -484,6 +486,19 @@ function setupSuggestions() {
 // ============================================================================
 // Ask flow — orchestrates all four panes
 // ============================================================================
+
+// Run one retrieval + answer build for a query string. Pure (no DOM), so ask()
+// can call it more than once (e.g. a bank-canonicalized retry).
+function retrieve(q) {
+  const rawRanked = state.bm25.search(q, 20);
+  const cohesion = cohereByDocument(rawRanked, state.chunks, {
+    queryTerms: tokenize(q),
+    bm25Index: state.bm25,
+  });
+  const built = buildAnswer(q, cohesion.ranked, state.chunks, cohesion);
+  return { ranked: cohesion.ranked, cohesion, ...built };
+}
+
 async function ask(question, opts = {}) {
   const silent = opts.silent === true;
   if (!silent) {
@@ -493,13 +508,24 @@ async function ask(question, opts = {}) {
 
   await new Promise(r => setTimeout(r, 80));
 
-  const rawRanked = state.bm25.search(question, 20);
-  const cohesion = cohereByDocument(rawRanked, state.chunks, {
-    queryTerms: tokenize(question),
-    bm25Index: state.bm25,
-  });
-  const ranked = cohesion.ranked;
-  const { answerHtml, citations, lowConfidence } = buildAnswer(question, ranked, state.chunks, cohesion);
+  // Retrieve with a curated-question-bank assist. We first try to match the
+  // user's wording to a vetted bank question:
+  //   - strong match (same question, high similarity)  → answer the canonical
+  //     phrasing directly (more consistent retrieval);
+  //   - otherwise                                       → live search on the
+  //     raw query (the general case);
+  //   - if that live search is weak but a bank question is a decent match     → retry with the canonical question as a rescue.
+  // Either way the pipeline runs for real, so citations/graph/lineage stay in
+  // sync — the bank only canonicalizes the query, never a canned answer.
+  const bankMatch = matchQuestionBank(question, { vocab: state.bm25.termId });
+  const BANK_STRONG = 0.7, BANK_RESCUE = 0.45;
+  let retrievalQuery = (bankMatch && bankMatch.score >= BANK_STRONG) ? bankMatch.question : question;
+  let result = retrieve(retrievalQuery);
+  if (result.lowConfidence && retrievalQuery === question && bankMatch && bankMatch.score >= BANK_RESCUE) {
+    const rescued = retrieve(bankMatch.question);
+    if (!rescued.lowConfidence) { result = rescued; retrievalQuery = bankMatch.question; }
+  }
+  const { ranked, cohesion, answerHtml, citations, lowConfidence } = result;
 
   const trace = state.graph.highlightTrace(citations.map(c => c.chunk.id));
 
