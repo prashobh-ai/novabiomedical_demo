@@ -2,12 +2,12 @@
 // Knowledge Fabric · Command Center — main entry
 // ============================================================================
 
-import { BM25, cohereByDocument, tokenize } from './search.js';
-import { buildAnswer } from './answer.js';
-import { KnowledgeGraph } from './graph.js';
-import { initInsights } from './insights.js';
-import { initLineage, renderLineage } from './lineage.js';
-import { initExplain, openExplain } from './explain.js';
+import { BM25, cohereByDocument, tokenize } from './search.js?v=2';
+import { buildAnswer } from './answer.js?v=2';
+import { KnowledgeGraph } from './graph.js?v=2';
+import { initInsights } from './insights.js?v=2';
+import { initLineage, renderLineage } from './lineage.js?v=2';
+import { initExplain, openExplain } from './explain.js?v=2';
 
 const INDEX_URL = 'data/index.json';
 

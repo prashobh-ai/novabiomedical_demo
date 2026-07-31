@@ -19,7 +19,7 @@
 //      headings, not in the body text.
 // =============================================================================
 
-import { tokenize, expandAgainstVocab, isBoilerplateSection } from './search.js';
+import { tokenize, expandAgainstVocab, isBoilerplateSection } from './search.js?v=2';
 
 const MAX_TOTAL_SENTENCES = 5;
 const MIN_SENTENCE_LEN = 25;
