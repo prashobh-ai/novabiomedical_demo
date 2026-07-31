@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Built index (CI rebuilds on every push)
+site/data/index.json
+
+# Logs
+*.log
