@@ -62,11 +62,30 @@ async function boot() {
   seedDemoAnswer();
 }
 
-// Pick a strong demo question from the corpus-derived suggestions so a
-// director scrolling past the hero immediately sees the product working, not
-// an empty stage. First user click runs through ask() and overwrites this.
+// Curated demo questions — hand-vetted to return strong, fully-cited answers
+// that also light up the knowledge graph and lineage. When this list is
+// non-empty it takes precedence over the auto-generated "What is <doc>?"
+// suggestions, so a demo always opens on its best foot. Each still runs
+// through the real ask() pipeline, so citations, graph, and lineage stay in
+// sync — nothing here is a canned answer. Empty the array to fall back to the
+// corpus-derived suggestions.
+const PRESET_QUESTIONS = [
+  'What is the intended use of the StatSensor Creatinine analyzer?',
+  'What are the operating temperature and humidity limits?',
+  'What is the clinical significance of measuring lactate?',
+];
+
+// The questions to surface as chips / seed the demo answer: curated presets
+// when defined, otherwise generated generically from the indexed documents.
+function demoQuestions() {
+  return PRESET_QUESTIONS.length ? PRESET_QUESTIONS.slice() : generateSuggestedQuestions();
+}
+
+// Pick a strong demo question so a director scrolling past the hero
+// immediately sees the product working, not an empty stage. First user click
+// runs through ask() and overwrites this.
 function seedDemoAnswer() {
-  const demoQ = generateSuggestedQuestions()[0];
+  const demoQ = demoQuestions()[0];
   if (!demoQ) return;
   // Run on next tick to let Galaxy finish first render
   setTimeout(() => ask(demoQ, { silent: true }), 350);
@@ -163,7 +182,7 @@ function generateSuggestedQuestions() {
 function populateSuggestions() {
   const container = document.getElementById('suggestions');
   if (!container) return;
-  const qs = generateSuggestedQuestions();
+  const qs = demoQuestions();
   container.innerHTML = '';
   for (const q of qs) {
     const btn = document.createElement('button');
