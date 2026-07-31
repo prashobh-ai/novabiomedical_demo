@@ -58,8 +58,11 @@ export function renderLineage(question, answerText, citations) {
     });
   });
 
-  document.getElementById('lineage-status').textContent =
-    `${byDoc.size} document${byDoc.size === 1 ? '' : 's'} · ${citations.length} citation${citations.length === 1 ? '' : 's'} · click any paragraph to inspect`;
+  const statusEl = document.getElementById('lineage-status');
+  if (statusEl) {
+    statusEl.textContent =
+      `${byDoc.size} document${byDoc.size === 1 ? '' : 's'} · ${citations.length} citation${citations.length === 1 ? '' : 's'} · click any paragraph to inspect`;
+  }
 }
 
 function renderPage(citation) {
