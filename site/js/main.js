@@ -2,13 +2,13 @@
 // Knowledge Fabric · Command Center — main entry
 // ============================================================================
 
-import { BM25, cohereByDocument, tokenize } from './search.js?v=4';
-import { buildAnswer } from './answer.js?v=4';
-import { KnowledgeGraph } from './graph.js?v=4';
-import { initInsights } from './insights.js?v=4';
-import { initLineage, renderLineage } from './lineage.js?v=4';
-import { initExplain, openExplain } from './explain.js?v=4';
-import { matchQuestionBank, QUESTION_BANK } from './questionbank.js?v=4';
+import { BM25, cohereByDocument, tokenize } from './search.js?v=5';
+import { buildAnswer } from './answer.js?v=5';
+import { KnowledgeGraph } from './graph.js?v=5';
+import { initInsights } from './insights.js?v=5';
+import { initLineage, renderLineage } from './lineage.js?v=5';
+import { initExplain, openExplain } from './explain.js?v=5';
+import { matchQuestionBank, QUESTION_BANK } from './questionbank.js?v=5';
 
 const INDEX_URL = 'data/index.json';
 
@@ -31,7 +31,10 @@ const state = {
 // ============================================================================
 async function boot() {
   try {
-    const res = await fetch(INDEX_URL);
+    // 'no-cache' forces the browser to revalidate the index with the server on
+    // every load, so a freshly-deployed corpus (new documents) shows up without
+    // needing a manual hard refresh. A 304 keeps it fast when nothing changed.
+    const res = await fetch(INDEX_URL, { cache: 'no-cache' });
     if (!res.ok) throw new Error(`Failed to load index: ${res.status}`);
     state.index = await res.json();
   } catch (err) {
