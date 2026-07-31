@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="site/assets/nova-biomedical-wordmark.png" alt="Nova Biomedical" width="450"/>
-</p>
+<h2 align="center">Nova Biomedical</h2>
 
 <h1 align="center">Knowledge Fabric</h1>
 
