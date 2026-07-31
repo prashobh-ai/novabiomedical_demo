@@ -66,6 +66,87 @@ export function expandAgainstVocab(term, vocab, maxVariants = 6) {
   return [...variants];
 }
 
+// Domain synonym lexicon — maps everyday phrasings to the terminology the
+// device manuals actually use, so natural questions reach the right passages
+// even when the user's words never appear in the corpus (e.g. "how much
+// blood" → sample / volume / drop; "clean" → disinfect; "error" → message /
+// code). Only expansions that exist in the index vocabulary are ever used
+// (filtered in synonymTokens), so this can never inject a term the corpus
+// can't support. Keys are lowercase single tokens.
+const DOMAIN_SYNONYMS = {
+  // sample & volume
+  amount: ['volume', 'sample'], quantity: ['volume', 'sample'], size: ['volume', 'sample'],
+  blood: ['sample', 'specimen', 'drop', 'whole'],
+  sample: ['specimen', 'blood', 'drop', 'volume'],
+  specimen: ['sample', 'blood', 'drop'],
+  volume: ['sample', 'drop', 'ul'],
+  drop: ['sample', 'volume'], droplet: ['drop', 'sample'],
+  // storage & environment
+  store: ['storage', 'temperature', 'room'], storing: ['storage', 'temperature'], stored: ['storage', 'temperature'],
+  storage: ['store', 'temperature', 'room'], keep: ['storage', 'store'],
+  temperature: ['operating', 'room', 'storage', 'humidity'], temp: ['temperature', 'operating'],
+  humidity: ['operating', 'humidity'], moisture: ['humidity'],
+  environment: ['operating', 'temperature', 'humidity'], environmental: ['operating', 'temperature', 'humidity'],
+  condition: ['storage', 'operating'], conditions: ['storage', 'operating'],
+  // cleaning & maintenance
+  clean: ['disinfect', 'maintenance'], cleaning: ['disinfect', 'maintenance'], wash: ['clean', 'disinfect'],
+  sanitize: ['disinfect', 'clean'], sanitise: ['disinfect', 'clean'], disinfect: ['clean', 'maintenance'],
+  maintenance: ['clean', 'disinfect'], upkeep: ['maintenance'], care: ['maintenance', 'clean'],
+  // errors & troubleshooting
+  error: ['message', 'code', 'warning', 'caution'], errors: ['message', 'code', 'warning'],
+  problem: ['error', 'message', 'caution'], problems: ['error', 'message'], issue: ['error', 'message'],
+  fault: ['error', 'message'], troubleshoot: ['error', 'message', 'code'], troubleshooting: ['error', 'message', 'code'],
+  // accuracy & performance
+  accurate: ['accuracy', 'precision'], accuracy: ['precision'], reliable: ['accuracy', 'precision'],
+  reliability: ['accuracy', 'precision'], precise: ['precision', 'accuracy'], precision: ['accuracy'],
+  performance: ['accuracy', 'precision'], correct: ['accuracy'],
+  // interference
+  interfere: ['interfering', 'substances', 'hematocrit'], interferes: ['interfering', 'substances'],
+  interference: ['interfering', 'substances', 'hematocrit'], interferences: ['interfering', 'substances'],
+  affect: ['interfering', 'substances'], affects: ['interfering', 'substances'], affecting: ['interfering', 'substances'],
+  substance: ['interfering', 'interference'], substances: ['interfering', 'interference'],
+  hematocrit: ['interfering', 'substances'], hct: ['hematocrit', 'interfering', 'substances'],
+  // measuring range & limits
+  range: ['measuring', 'reportable', 'mmol'], reportable: ['range', 'measuring'],
+  limit: ['limitations', 'range'], limits: ['limitations', 'range'], limitation: ['limitations'],
+  min: ['measuring', 'range'], max: ['measuring', 'range'], maximum: ['measuring', 'range'], minimum: ['measuring', 'range'],
+  // results
+  result: ['reportable', 'result'], results: ['reportable', 'result'], reading: ['result'], readings: ['result'],
+  value: ['result', 'reportable'], values: ['result', 'reportable'],
+  // warnings & safety
+  warning: ['caution', 'limitations'], warnings: ['caution', 'limitations'],
+  precaution: ['caution', 'warning'], precautions: ['caution', 'warning'], caution: ['warning'],
+  safety: ['caution', 'warning', 'limitations'],
+  contraindication: ['limitations', 'caution'], contraindications: ['limitations', 'caution'],
+  // consumables & hardware
+  strip: ['strips'], strips: ['strip'], cartridge: ['strip', 'strips'], cartridges: ['strip', 'strips'],
+  analyzer: ['meter'], analyser: ['meter'], device: ['meter'], instrument: ['meter'], monitor: ['meter'], machine: ['meter'],
+  power: ['battery'], charge: ['battery'],
+  // calibration & coding
+  calibrate: ['code', 'control'], calibration: ['code', 'control'], calibrated: ['code', 'control'], coding: ['code'],
+  setup: ['code', 'operating'],
+  // quality control
+  qc: ['control', 'quality'], control: ['quality'],
+  // clinical / analytes
+  lactic: ['lactate'], renal: ['creatinine'], kidney: ['creatinine'], sugar: ['glucose'], serum: ['plasma'],
+  vein: ['venous'], artery: ['arterial'], fingerstick: ['capillary', 'drop'], finger: ['capillary', 'drop'],
+  septic: ['sepsis'], shock: ['sepsis'], lactatemia: ['lactate'],
+  // disposal & lifecycle
+  dispose: ['disposal'], discard: ['disposal'], expiry: ['expiration'], expire: ['expiration'],
+  expires: ['expiration'], expired: ['expiration'],
+  // usage / intent
+  use: ['intended', 'operating'], usage: ['intended', 'operating'], purpose: ['intended'], indication: ['intended'],
+  indications: ['intended'], operate: ['operating'], operation: ['operating'],
+};
+
+// Synonym expansions for a query term, restricted to those actually present
+// in the index vocabulary. `vocab` is the term→id map from the BM25 index.
+export function synonymTokens(term, vocab) {
+  const syns = DOMAIN_SYNONYMS[term];
+  if (!syns) return [];
+  return syns.filter(s => s !== term && vocab[s] !== undefined);
+}
+
 // =============================================================================
 // Ranker
 // =============================================================================
@@ -89,13 +170,19 @@ export class BM25 {
     const seen = new Set();
 
     for (const term of terms) {
-      const variants = expandAgainstVocab(term, this.termId);
-      for (const variant of variants) {
+      // Build a weighted expansion set: the term itself (full weight),
+      // morphological variants (damped), and domain synonyms (further damped
+      // so a synonym match never outweighs a literal one).
+      const weighted = new Map();
+      for (const v of expandAgainstVocab(term, this.termId)) {
+        weighted.set(v, v === term ? 1.0 : 0.55);
+      }
+      for (const s of synonymTokens(term, this.termId)) {
+        if (!weighted.has(s)) weighted.set(s, 0.45);
+      }
+      for (const [variant, weight] of weighted) {
         const tid = this.termId[variant];
         if (tid === undefined) continue;
-        // Original term gets full IDF; variants get a damped weight so we
-        // don't double-count "founded" + "founder" + "founding" as 3x signal.
-        const weight = variant === term ? 1.0 : 0.55;
         const idf = this.idf[tid] * weight;
         const posting = this.postings[tid] || [];
         for (const [chunkIdx, tf] of posting) {
@@ -156,7 +243,7 @@ const CONTENT_STOPWORDS = new Set([
 export function cohereByDocument(rawRanked, chunks, opts = {}) {
   const maxChunks = opts.maxChunks ?? 8;
   const dominanceThreshold = opts.dominanceThreshold ?? 1.5;
-  const minConfidentRatio = opts.minConfidentRatio ?? 1.5;
+  const minConfidentRatio = opts.minConfidentRatio ?? 1.3;
   const queryTerms = opts.queryTerms || [];
   const docNameBoost = opts.docNameBoost ?? 4.0;
   const bm25Index = opts.bm25Index || null;
