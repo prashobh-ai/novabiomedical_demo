@@ -14,8 +14,17 @@ env/
 .DS_Store
 *.swp
 
-# Built index (CI rebuilds on every push)
+# Build artifacts (CI regenerates on every push)
 site/data/index.json
+site/data/semantic.json
+site/data/eval_report.json
 
 # Logs
 *.log
+
+# Node (integration test harness deps — installed ad hoc, never committed)
+node_modules/
+package-lock.json
+
+# Test caches
+.pytest_cache/
